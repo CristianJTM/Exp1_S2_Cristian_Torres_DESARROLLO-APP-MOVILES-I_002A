@@ -23,7 +23,9 @@ class Pedido(
     val enPromocion: Boolean = false
 ) {
     val cantidadPizzas: Int
-        get() = items.sumOf { it.cantidad }
+        get() = items
+            .filter { it.producto.categoria == CategoriaProducto.PIZZA }
+            .sumOf { it.cantidad }
 
     operator fun component1(): Cliente = cliente
 
@@ -85,8 +87,9 @@ class Pedido(
     }
 
     operator fun plus(otro: Pedido): Pedido {
-        require(cliente == otro.cliente) {
-            "Solo se pueden combinar pedidos del mismo cliente."
+        if (cliente != otro.cliente) {
+            println("No se pueden combinar pedidos de clientes distintos.")
+            return this
         }
 
         val itemsCombinados: MutableList<ItemPedido> = mutableListOf()
@@ -107,12 +110,20 @@ class Pedido(
             otro.notas
         ).joinToString(" | ")
 
+        val estadoCombinado: EstadoPedido = if (estado.ordinal >= otro.estado.ordinal) {
+            estado
+        } else {
+            otro.estado
+        }
+        val repartidorCombinado: Repartidor? = repartidor ?: otro.repartidor
+
         return Pedido(
             id = id,
             cliente = cliente,
             items = itemsCombinados,
             notas = notasCombinadas,
-            estado = EstadoPedido.EN_PREPARACION,
+            estado = estadoCombinado,
+            repartidor = repartidorCombinado,
             fecha = if (fecha.isAfter(otro.fecha)) fecha else otro.fecha,
             enPromocion = enPromocion || otro.enPromocion
         )
