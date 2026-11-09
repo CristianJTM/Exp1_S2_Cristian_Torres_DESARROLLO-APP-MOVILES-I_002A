@@ -67,10 +67,10 @@ src/
 
 ## Reglas de negocio
 
-- El correo debe tener formato `nombre@dominio.com`; si es inválido, se solicita nuevamente.
+- El correo debe tener formato `nombre@dominio.com`; si es inválido, se solicita nuevamente. Enter lo omite.
 - El teléfono se normaliza a un formato uniforme; si no tiene 9, 11 o 12 dígitos, se solicita nuevamente.
 - La cantidad de productos debe estar entre 1 y 100.
-- El descuento por cantidad es del 10% cuando el pedido tiene más de 3 pizzas.
+- El descuento por cantidad es del 10% cuando el pedido tiene más de 3 pizzas de categoría `PIZZA`.
 - La promoción está activa desde 7 días antes hasta 7 días después de la fecha actual.
 - Si la promoción está activa, se aplica un descuento adicional del 5%.
 - El IVA es del 19% y se aplica después de los descuentos.
@@ -81,6 +81,8 @@ src/
 - El repartidor se elige por zona y disponibilidad, priorizando la menor distancia.
 - Dos clientes son iguales si coinciden en nombre y correo.
 - Dos productos son iguales si coinciden en nombre y categoría.
+- Un pedido combinado conserva el estado más avanzado y el repartidor si alguno lo tenía.
+- Si se intenta combinar pedidos de clientes distintos, se informa y no se combinan.
 
 ## Conceptos avanzados
 
@@ -88,8 +90,8 @@ src/
 |---|---|
 | `Regex` | Validación de correo y teléfono en `Validaciones.kt`. |
 | `Ranges` | Cantidades `1..100` y rango de fechas de promoción. |
-| Anotaciones | `@Promocionable` en pizzas y combos. |
-| Reflection | Listado de métodos y campos de `Producto`, `Pedido` y `Cliente`. |
+| Anotaciones | `@Promocionable` en `PizzaPromocionable` y `ComboPromocionable`. |
+| Reflection | Listado de métodos, campos y anotaciones de las clases del dominio. |
 | Operador `+` | `Pedido.plus()` combina ítems y recalcula totales. |
 | Operador `==` | `Producto.equals()` por nombre y categoría. |
 | Desestructuración | `component1..3` en `Cliente` y `Pedido`. |
@@ -111,15 +113,20 @@ src/
 | Escenario | Condición | Resultado esperado |
 |---|---|---|
 | Correo inválido | Sin formato `nombre@dominio.com` | Se solicita nuevamente. |
+| Correo vacío | Enter en el prompt | Se omite el correo y no se notifica. |
+| Descuento por bebidas | Pedido de solo bebidas | No aplica descuento por cantidad. |
 | Teléfono local | 9 dígitos | Se normaliza a `+56 (9) 1234-5678`. |
 | Teléfono chileno | 11 dígitos | Se formatea como `+56 (9) 1234-5678`. |
 | Teléfono internacional | 12 dígitos | Se formatea como `+XX (XXX) XXX-XXXX`. |
+| Teléfono inválido | Sin dígitos o longitud no soportada | Se solicita nuevamente. |
 | Cantidad inválida | `0`, `101` o texto | Se solicita nuevamente. |
 | Promoción activa | Fecha dentro del rango | Se aplica 5% adicional. |
 | Promoción inactiva | Fecha fuera del rango | No se aplica descuento promocional. |
 | Producto promocionable | Clase anotada con `@Promocionable` | Aparece en el resumen avanzado y en el pedido. |
-| Reflection | Clases del dominio | Lista métodos y propiedades/campos. |
+| Reflection | Clases del dominio | Lista métodos, propiedades/campos y anotaciones. |
 | Operador `+` | Dos pedidos del mismo cliente | Se combinan ítems y se recalcula el total. |
+| Operador `+` con clientes distintos | Pedidos incompatibles | Se informa y no se combinan. |
+| Resumen con pedidos reales | Dos pedidos del mismo cliente registrados | El resumen usa esos pedidos; si no existen, usa demostración. |
 | Igualdad de productos | Mismo nombre y categoría | `==` es verdadero y no se duplica en `Set`. |
 | Igualdad de clientes | Mismo nombre y correo | `==` es verdadero y no se registra dos veces. |
 | Desestructuración | Cliente y pedido | Se obtienen nombre/correo/teléfono y cliente/productos/total. |

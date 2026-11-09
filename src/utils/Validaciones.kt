@@ -3,6 +3,12 @@ package utils
 private val FORMATO_TELEFONO: Regex = Regex(PATRON_TELEFONO)
 private val FORMATO_CORREO: Regex = Regex(PATRON_CORREO)
 
+fun esCorreoValido(correo: String): Boolean = FORMATO_CORREO.matches(correo)
+
+fun esTelefonoValido(telefono: String): Boolean {
+    return FORMATO_TELEFONO.matches(telefono) && formatearTelefono(telefono) != null
+}
+
 fun leerTexto(mensaje: String, valorPorDefecto: String): String {
     print(mensaje)
     val entrada: String = readlnOrNull()?.trim().orEmpty()
@@ -30,10 +36,14 @@ fun leerTelefono(): String {
 
 fun leerCorreo(): String? {
     while (true) {
-        print("Correo: ")
+        print("Correo (opcional, Enter para omitir): ")
         val correo: String = readlnOrNull()?.trim() ?: return null
 
-        if (FORMATO_CORREO.matches(correo)) {
+        if (correo.isEmpty()) {
+            return null
+        }
+
+        if (esCorreoValido(correo)) {
             return correo
         }
 

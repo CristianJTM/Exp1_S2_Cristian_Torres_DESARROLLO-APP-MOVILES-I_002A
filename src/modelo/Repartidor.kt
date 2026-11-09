@@ -5,7 +5,7 @@ class Repartidor(
     contacto: String,
     val zona: String,
     val distanciaKm: Double,
-    var disponible: Boolean = true
+    val disponible: Boolean = true
 ) : Usuario(nombre, contacto) {
 
     fun entregarPedido(pedido: Pedido) {
@@ -22,7 +22,6 @@ class Repartidor(
                 pedido.asignarRepartidor(this)
 
                 if (pedido.cambiarEstado(EstadoPedido.EN_CAMINO)) {
-                    disponible = false
                     println("$nombre está entregando el pedido #${pedido.id}.")
                 } else {
                     println("No se pudo actualizar el estado del pedido #${pedido.id}.")
