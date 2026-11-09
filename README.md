@@ -82,7 +82,7 @@ src/
 - Dos clientes son iguales si coinciden en nombre y correo.
 - Dos productos son iguales si coinciden en nombre y categoría.
 - Un pedido combinado conserva el estado más avanzado y el repartidor si alguno lo tenía.
-- Si se intenta combinar pedidos de clientes distintos, se informa y no se combinan.
+- Si se intenta combinar pedidos de clientes distintos, se muestra un mensaje de error y no se combinan.
 
 ## Conceptos avanzados
 
@@ -125,7 +125,7 @@ src/
 | Producto promocionable | Clase anotada con `@Promocionable` | Aparece en el resumen avanzado y en el pedido. |
 | Reflection | Clases del dominio | Lista métodos, propiedades/campos y anotaciones. |
 | Operador `+` | Dos pedidos del mismo cliente | Se combinan ítems y se recalcula el total. |
-| Operador `+` con clientes distintos | Pedidos incompatibles | Se informa y no se combinan. |
+| Operador `+` con clientes distintos | Pedidos incompatibles | Se informa con un mensaje de error y no se combinan. |
 | Resumen con pedidos reales | Dos pedidos del mismo cliente registrados | El resumen usa esos pedidos; si no existen, usa demostración. |
 | Igualdad de productos | Mismo nombre y categoría | `==` es verdadero y no se duplica en `Set`. |
 | Igualdad de clientes | Mismo nombre y correo | `==` es verdadero y no se registra dos veces. |

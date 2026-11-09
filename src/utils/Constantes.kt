@@ -1,6 +1,6 @@
 package utils
 
-const val TELEFONO_POR_DEFECTO: String = "(000) 000-0000"
+const val TELEFONO_POR_DEFECTO: String = "+00 (000) 000-0000"
 const val CORREO_POR_DEFECTO: String = "correo@invalido.com"
 
 const val PATRON_TELEFONO: String = """^\+?(?=[\d() -]*\d)[\d() -]+$"""
