@@ -87,9 +87,9 @@ class Pedido(
     }
 
     operator fun plus(otro: Pedido): Pedido {
+        // No se combinan pedidos de clientes distintos; se informa con una excepción controlada.
         if (cliente != otro.cliente) {
-            println("No se pueden combinar pedidos de clientes distintos.")
-            return this
+            throw IllegalArgumentException("No se pueden combinar pedidos de clientes distintos.")
         }
 
         val itemsCombinados: MutableList<ItemPedido> = mutableListOf()
