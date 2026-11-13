@@ -17,6 +17,7 @@ import servicio.Promocion
 import servicio.Promociones
 import utils.RANGO_CANTIDAD_PERMITIDA
 import utils.Reflexion
+import utils.SecuenciaPedidos
 import utils.esCorreoValido
 import utils.formatearMonto
 import utils.formatearTelefono
@@ -26,15 +27,19 @@ import utils.leerNotas
 import utils.leerOpcion
 import utils.leerSiNo
 import utils.leerTelefono
-import utils.leerTexto
+import utils.leerTextoObligatorio
 import java.time.LocalDate
+
+fun cancelarOperacion() {
+    println("Entrada finalizada. Operación cancelada.")
+}
 
 fun main() {
     val pizzeria: Pizzeria = crearPizzeria()
 
     while (true) {
         mostrarMenuPrincipal()
-        val opcion: Int = leerOpcion(1, 8, "Seleccione una opción: ") ?: return
+        val opcion: Int = leerOpcion(1, 8, "Seleccione una opción: ") ?: return cancelarOperacion()
 
         when (opcion) {
             1 -> registrarPedido(pizzeria)
@@ -127,12 +132,12 @@ fun registrarPedido(pizzeria: Pizzeria) {
     println()
     println("=== REGISTRO DE PEDIDO ===")
 
-    val nombre: String = leerTexto("Nombre del cliente: ", "Cliente sin nombre")
-    val telefono: String = leerTelefono()
-    val correo: String? = leerCorreo()
+    val nombre: String = leerTextoObligatorio("Nombre del cliente: ") ?: return cancelarOperacion()
+    val telefono: String = leerTelefono() ?: return cancelarOperacion()
+    val correo: String = leerCorreo() ?: return cancelarOperacion()
 
     println("Zonas: 1. Centro, 2. Norte, 3. Sur")
-    val zonaOpcion: Int = leerOpcion(1, 3, "Seleccione zona: ") ?: return
+    val zonaOpcion: Int = leerOpcion(1, 3, "Seleccione zona: ") ?: return cancelarOperacion()
     val zona: String = when (zonaOpcion) {
         1 -> "Centro"
         2 -> "Norte"
@@ -147,7 +152,8 @@ fun registrarPedido(pizzeria: Pizzeria) {
     var agregarOtro: Boolean = true
     while (agregarOtro) {
         pizzeria.mostrarProductos()
-        val opcion: Int = leerOpcion(1, pizzeria.productos.size, "Seleccione un producto: ") ?: return
+        val opcion: Int = leerOpcion(1, pizzeria.productos.size, "Seleccione un producto: ")
+            ?: return cancelarOperacion()
         val producto: Producto? = pizzeria.productos.getOrNull(opcion - 1)
         if (producto == null) {
             println("El producto seleccionado ya no está disponible.")
@@ -155,8 +161,9 @@ fun registrarPedido(pizzeria: Pizzeria) {
         }
 
         val cantidad: Int = leerCantidad("Cantidad de ${producto.nombre}: ")
+            ?: return cancelarOperacion()
         items.add(ItemPedido(producto, cantidad))
-        agregarOtro = leerSiNo("¿Agregar otro producto? (s/n): ")
+        agregarOtro = leerSiNo("¿Agregar otro producto? (s/n): ") ?: return cancelarOperacion()
     }
 
     val pedido: Pedido? = pizzeria.registrarPedido(clienteRegistrado, items, notas)
@@ -183,14 +190,15 @@ fun reabastecerInventario(pizzeria: Pizzeria) {
         println("${indice + 1}. $ingrediente")
     }
 
-    val opcion: Int = leerOpcion(1, ingredientes.size, "Seleccione el ingrediente: ") ?: return
+    val opcion: Int = leerOpcion(1, ingredientes.size, "Seleccione el ingrediente: ")
+        ?: return cancelarOperacion()
     val ingrediente: String? = ingredientes.getOrNull(opcion - 1)
     if (ingrediente == null) {
         println("El ingrediente seleccionado ya no está disponible.")
         return
     }
 
-    val cantidad: Int = leerCantidad("Cantidad a reponer: ")
+    val cantidad: Int = leerCantidad("Cantidad a reponer: ") ?: return cancelarOperacion()
     pizzeria.inventario.reponer(ingrediente, cantidad)
 }
 
@@ -267,9 +275,16 @@ fun mostrarResumenAvanzado(pizzeria: Pizzeria) {
     println("Desde ${Promocion.inicio} hasta ${Promocion.fin}.")
     println("Promoción activa hoy: ${Promocion.estaActiva()}.")
     println("Promoción activa dentro de un año: ${Promocion.estaActiva(LocalDate.now().plusYears(1))}.")
+    println(
+        "Vigencia según fecha del pedido (hace 10 días): " +
+            "${Promocion.estaActiva(LocalDate.now().minusDays(10))}."
+    )
     println("Rango permitido de cantidades: ${RANGO_CANTIDAD_PERMITIDA.first}-${RANGO_CANTIDAD_PERMITIDA.last}.")
-    println("Correo válido 'cliente@demo.com': ${esCorreoValido("cliente@demo.com")}.")
+    println("Correo válido 'nombre.apellido@sub.dominio.cl': ${esCorreoValido("nombre.apellido@sub.dominio.cl")}.")
     println("Correo inválido 'correo-malo': ${esCorreoValido("correo-malo")}.")
+    println("Correo con puntos consecutivos 'usuario..doble@demo.com': ${esCorreoValido("usuario..doble@demo.com")}.")
+    println("Correo con punto antes de @ 'usuario.@demo.com': ${esCorreoValido("usuario.@demo.com")}.")
+    println("Correo con dominio mal formado 'usuario@-demo.com': ${esCorreoValido("usuario@-demo.com")}.")
     println("Teléfono formateado de ejemplo: ${formatearTelefono("+56 9 1234 5678")}.")
     println(
         "Repartidores disponibles: ${pizzeria.repartidores.count { it.disponible }} " +
@@ -315,18 +330,16 @@ fun mostrarResumenAvanzado(pizzeria: Pizzeria) {
             "Centro"
         )
         pedidoA = Pedido(
-            id = 9001,
+            id = SecuenciaPedidos.siguiente(),
             cliente = clienteDemo,
-            items = mutableListOf(ItemPedido(pizzeria.productos[0], 2)),
-            notas = "Pedido de demostración A",
-            enPromocion = true
+            itemsIniciales = mutableListOf(ItemPedido(pizzeria.productos[0], 2)),
+            notas = "Pedido de demostración A"
         )
         pedidoB = Pedido(
-            id = 9002,
+            id = SecuenciaPedidos.siguiente(),
             cliente = clienteDemo,
-            items = mutableListOf(ItemPedido(pizzeria.productos[1], 3)),
-            notas = "Pedido de demostración B",
-            enPromocion = true
+            itemsIniciales = mutableListOf(ItemPedido(pizzeria.productos[1], 3)),
+            notas = "Pedido de demostración B"
         )
         println("--- Pedidos de demostración ---")
         println("No hay dos pedidos reales del mismo cliente; se usan pedidos de demostración.")
@@ -339,13 +352,31 @@ fun mostrarResumenAvanzado(pizzeria: Pizzeria) {
     println("Teléfono: $telefonoCliente")
 
     println("--- Pedidos combinados con + ---")
-    val pedidoCombinado: Pedido = try {
-        pedidoA + pedidoB
-    } catch (e: IllegalArgumentException) {
-        println("No se pudieron combinar los pedidos: ${e.message}")
+    val pedidoCombinado: Pedido? = pedidoA + pedidoB
+    if (pedidoCombinado == null) {
+        println("No se pudieron combinar los pedidos: ${pedidoA.motivoIncompatibilidad(pedidoB)}")
         return
     }
     println(pedidoCombinado.generarResumen())
+
+    println("--- Combinación incompatible controlada ---")
+    val clienteAjeno: Cliente = Cliente(
+        "Cliente Ajeno",
+        "+56 (9) 8888-7777",
+        "ajeno@demo.com",
+        "Sur"
+    )
+    val pedidoAjeno: Pedido = Pedido(
+        id = SecuenciaPedidos.siguiente(),
+        cliente = clienteAjeno,
+        itemsIniciales = mutableListOf(ItemPedido(pizzeria.productos[0], 1))
+    )
+    val combinacionRechazada: Pedido? = pedidoA + pedidoAjeno
+    println(
+        "Combinación con cliente distinto: " +
+            "${if (combinacionRechazada == null) "rechazada" else "aceptada"}."
+    )
+    println("Motivo: ${pedidoA.motivoIncompatibilidad(pedidoAjeno)}")
 
     println("--- Pedido desestructurado ---")
     val (clientePedido, productosPedido, totalPedido) = pedidoCombinado

@@ -1,14 +1,18 @@
 package servicio
 
-import utils.DIAS_PROMOCION
+import utils.estaEnPeriodoPromocional
+import utils.finPromocion
+import utils.inicioPromocion
 import java.time.LocalDate
 
 object Promocion {
-    private val hoy: LocalDate = LocalDate.now()
-    val inicio: LocalDate = hoy.minusDays(DIAS_PROMOCION.toLong())
-    val fin: LocalDate = hoy.plusDays(DIAS_PROMOCION.toLong())
+    val inicio: LocalDate
+        get() = inicioPromocion()
+
+    val fin: LocalDate
+        get() = finPromocion()
 
     fun estaActiva(fecha: LocalDate = LocalDate.now()): Boolean {
-        return fecha.toEpochDay() in inicio.toEpochDay()..fin.toEpochDay()
+        return estaEnPeriodoPromocional(fecha)
     }
 }

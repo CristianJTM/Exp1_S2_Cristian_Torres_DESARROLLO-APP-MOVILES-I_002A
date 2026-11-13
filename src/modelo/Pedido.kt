@@ -1,5 +1,7 @@
 package modelo
 
+import utils.RANGO_CANTIDAD_PERMITIDA
+import utils.SecuenciaPedidos
 import utils.TASA_DESCUENTO_PROMOCIONAL
 import utils.calcularDescuento as calcularDescuentoUtil
 import utils.calcularDescuentoPromocional as calcularDescuentoPromocionalUtil
@@ -7,6 +9,7 @@ import utils.calcularImpuesto as calcularImpuestoUtil
 import utils.calcularPorcentajeDescuento
 import utils.calcularSubtotal as calcularSubtotalUtil
 import utils.calcularTotal as calcularTotalUtil
+import utils.estaEnPeriodoPromocional
 import utils.formatearMonto
 import utils.formatearPorcentaje
 import java.time.LocalDate
@@ -14,14 +17,22 @@ import java.time.LocalDate
 class Pedido(
     val id: Int,
     val cliente: Cliente,
-    // items es la fuente única de productos y cantidades del pedido.
-    val items: MutableList<ItemPedido>,
+    itemsIniciales: List<ItemPedido>,
     val notas: String? = null,
     var estado: EstadoPedido = EstadoPedido.EN_PREPARACION,
     var repartidor: Repartidor? = null,
-    val fecha: LocalDate = LocalDate.now(),
-    val enPromocion: Boolean = false
+    val fecha: LocalDate = LocalDate.now()
 ) {
+    // La colección interna solo se modifica mediante agregarProducto.
+    private val itemsInternos: MutableList<ItemPedido> = itemsIniciales.toMutableList()
+
+    val items: List<ItemPedido>
+        get() = itemsInternos.toList()
+
+    // Se calcula con la fecha del pedido para mantener coherencia temporal.
+    val enPromocion: Boolean
+        get() = estaEnPeriodoPromocional(fecha)
+
     val cantidadPizzas: Int
         get() = items
             .filter { it.producto.categoria == CategoriaProducto.PIZZA }
@@ -34,7 +45,10 @@ class Pedido(
     operator fun component3(): Double = calcularTotal()
 
     fun agregarProducto(producto: Producto, cantidad: Int) {
-        items.add(ItemPedido(producto, cantidad))
+        require(cantidad in RANGO_CANTIDAD_PERMITIDA) {
+            "La cantidad debe estar entre ${RANGO_CANTIDAD_PERMITIDA.first} y ${RANGO_CANTIDAD_PERMITIDA.last}."
+        }
+        itemsInternos.add(ItemPedido(producto, cantidad))
     }
 
     fun calcularSubtotal(): Double = calcularSubtotalUtil(items)
@@ -81,15 +95,23 @@ class Pedido(
     }
 
     fun notificarCliente() {
-        cliente.correo?.let { correo ->
-            println("Notificación enviada a ${cliente.nombre} <$correo>.")
-        }
+        println("Notificación enviada a ${cliente.nombre} <${cliente.correo}>.")
     }
 
-    operator fun plus(otro: Pedido): Pedido {
-        // No se combinan pedidos de clientes distintos; se informa con una excepción controlada.
+    fun motivoIncompatibilidad(otro: Pedido): String? {
+        if (items.isEmpty() && otro.items.isEmpty()) {
+            return "No hay ítems para combinar."
+        }
         if (cliente != otro.cliente) {
-            throw IllegalArgumentException("No se pueden combinar pedidos de clientes distintos.")
+            return "Los pedidos pertenecen a clientes distintos."
+        }
+        return null
+    }
+
+    operator fun plus(otro: Pedido): Pedido? {
+        // Un resultado nulo informa la incompatibilidad sin interrumpir la ejecución.
+        if (motivoIncompatibilidad(otro) != null) {
+            return null
         }
 
         val itemsCombinados: MutableList<ItemPedido> = mutableListOf()
@@ -98,10 +120,16 @@ class Pedido(
 
             if (indice >= 0) {
                 val actual: ItemPedido = itemsCombinados[indice]
-                itemsCombinados[indice] = actual.copy(cantidad = actual.cantidad + item.cantidad)
-            } else {
-                itemsCombinados.add(item.copy())
+                val cantidadFusionada: Int = actual.cantidad + item.cantidad
+
+                // Si la fusión supera el máximo, se conserva una línea separada.
+                if (cantidadFusionada <= RANGO_CANTIDAD_PERMITIDA.last) {
+                    itemsCombinados[indice] = actual.copy(cantidad = cantidadFusionada)
+                    continue
+                }
             }
+
+            itemsCombinados.add(item.copy())
         }
 
         val notasCombinadas: String = listOfNotNull(
@@ -118,14 +146,13 @@ class Pedido(
         val repartidorCombinado: Repartidor? = repartidor ?: otro.repartidor
 
         return Pedido(
-            id = id,
+            id = SecuenciaPedidos.siguiente(),
             cliente = cliente,
-            items = itemsCombinados,
+            itemsIniciales = itemsCombinados,
             notas = notasCombinadas,
             estado = estadoCombinado,
             repartidor = repartidorCombinado,
-            fecha = if (fecha.isAfter(otro.fecha)) fecha else otro.fecha,
-            enPromocion = enPromocion || otro.enPromocion
+            fecha = if (fecha.isAfter(otro.fecha)) fecha else otro.fecha
         )
     }
 
